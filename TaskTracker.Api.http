@@ -26,7 +26,7 @@ GET {{base}}/api/tasks/8
 GET {{base}}/api/tasks/1
 
 ###
-PUT {{base}}/api/tasks/1
+PUT {{base}}/api/tasks/4
 Content-Type: application/json
 
 {
@@ -35,5 +35,9 @@ Content-Type: application/json
 }
 
 ###
-DELETE {{base}}/api/tasks/8
+DELETE {{base}}/api/tasks/1
+Content-Type: application/json
+###
+
+DELETE {{base}}/api/tasks
 Content-Type: application/json

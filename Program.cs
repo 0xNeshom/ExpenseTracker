@@ -1,4 +1,4 @@
-// using TaskTracker.Api;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,7 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddSingleton<ITaskRepository, TaskRepository>();
+builder.Services.AddDbContext<TaskDbContext>(options =>
+    options.UseSqlite("Data Source=tasks.db"));
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -18,43 +21,35 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 
-var nextId = 4;
 
-app.MapGet("/api/tasks", (ITaskRepository repository) =>
+app.MapGet("/api/tasks", async (ITaskService service) =>
 {
-    return repository.GetAll();
+    return service.GetAllAsync();
 })
 .WithName("GetTasks");
 
-app.MapPost("/api/tasks", (ITaskRepository repository, TaskItem task) =>
+app.MapPost("/api/tasks",async (ITaskService service, TaskItem task) =>
 {
-    
-    var createdTask = new TaskItem
-    {
-        Id = nextId++,
-        Name = task.Name,
-        IsComplete = task.IsComplete
-    };
-    repository.Add(createdTask);
+    var createdTask =await service.CreateAsync(task);
 
-    return Results.Created($"/api/tasks/{createdTask.Id}", createdTask);
-})
-.WithName("CreateTask")
-.Produces<TaskItem>(StatusCodes.Status201Created);
+    return Results.Created(
+        $"/api/tasks/{createdTask.Id}",
+        createdTask
+    );
+});
 
-
-app.MapGet("/api/tasks/{id}", (ITaskRepository repository, int id) =>
+app.MapGet("/api/tasks/{id}",async (ITaskService service, int id) =>
 {
-    var task = repository.GetById(id);
+    var task =await service.GetByIdAsync(id);
 
     return task is null
         ? Results.NotFound()
         : Results.Ok(task);
 });
 
-app.MapPut("/api/tasks/{id}", (ITaskRepository repository, int id, TaskItem updatedTask) =>
+app.MapPut("/api/tasks/{id}",async (ITaskService service, int id, TaskItem updatedTask) =>
 {
-    var updated = repository.Update(id, updatedTask);
+    var updated =await service.UpdateAsync(id, updatedTask);
     // var task = tasks.FirstOrDefault(t => t.Id == id);
     
     // task.Name = updatedTask.Name;
@@ -65,21 +60,21 @@ app.MapPut("/api/tasks/{id}", (ITaskRepository repository, int id, TaskItem upda
         : Results.NotFound();
 });
 
-app.MapDelete("/api/tasks/{id}", (ITaskRepository repository, int id) =>
+app.MapDelete("/api/tasks/{id}",async (ITaskService service, int id) =>
 {
     // var task = tasks.FirstOrDefault(t => t.Id == id);
  
-    return repository.Delete(id)
+    return await service.DeleteAsync(id)
+        ? Results.NoContent()
+        : Results.NotFound();
+});
+
+app.MapDelete("/api/tasks",async (ITaskService service) =>
+{
+    return await service.DeleteAllAsync()
         ? Results.NoContent()
         : Results.NotFound();
 });
 
 app.Run();
-
-public class TaskItem
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public bool IsComplete { get; set; }
-}
 

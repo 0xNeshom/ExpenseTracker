@@ -1,56 +1,79 @@
-// namespace TaskTracker.Api;
+using Microsoft.EntityFrameworkCore;
 
+public class TaskRepository : ITaskRepository
+{
+    private readonly TaskDbContext _context;
 
-public class TaskRepository : ITaskRepository{
-    private readonly List<TaskItem> _tasks;
-
-    public TaskRepository()
+    public TaskRepository(TaskDbContext context)
     {
-        _tasks = new List<TaskItem>
+        _context = context;
+    }
+
+    public async Task<List<TaskItem>> GetAllAsync()
+    {
+        return await _context.Tasks.ToListAsync();
+    }
+
+    public async Task<TaskItem?> GetByIdAsync(int id)
+    {
+        return await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+    }
+
+    public async Task<TaskItem> AddAsync(TaskItem task)
+    {
+        _context.Tasks.Add(task);
+
+        await _context.SaveChangesAsync();
+
+        return task;
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var task = await GetByIdAsync(id);
+
+        if (task is null)
         {
-            new TaskItem { Id = 1, Name = "Task 1", IsComplete = false },
-            new TaskItem { Id = 2, Name = "Task 2", IsComplete = true },
-            new TaskItem { Id = 3, Name = "Task 3", IsComplete = false }
-        };
+            return false;
+        }
+
+        _context.Tasks.Remove(task);
+
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 
-    public List<TaskItem> GetAll()
+    public async Task<bool> UpdateAsync(int id, TaskItem updatedTask)
     {
-    return _tasks;
+        var task = await GetByIdAsync(id);
+
+        if (task is null)
+        {
+            return false;
+        }
+
+        task.Name = updatedTask.Name;
+        task.IsComplete = updatedTask.IsComplete;
+
+        await _context.SaveChangesAsync();
+
+        return true;
     }
-    public TaskItem? GetById(int id)
+
+    public async Task<bool> DeleteAllAsync()
     {
-        return _tasks.FirstOrDefault(t => t.Id == id);
+        var tasks = await _context.Tasks.ToListAsync();
+
+        if (tasks.Count == 0)
+        {
+            return false;
+        }
+
+        _context.Tasks.RemoveRange(tasks);
+
+        await _context.SaveChangesAsync();
+
+        return true;
     }
-    public void Add(TaskItem task)
-    {
-        _tasks.Add(task);
-    }
-    public bool Delete(int id)
-{
-    var task = GetById(id);
-
-    if (task is null)
-    {
-        return false;
-    }
-
-    _tasks.Remove(task);
-    return true;
-}
-
-public bool Update(int id, TaskItem updatedTask)
-{
-    var task = GetById(id);
-
-    if (task is null)
-    {
-        return false;
-    }
-
-    task.Name = updatedTask.Name;
-    task.IsComplete = updatedTask.IsComplete;
-
-    return true;
-}
 }
