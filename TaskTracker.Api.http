@@ -1,0 +1,39 @@
+@base = http://localhost:5171
+
+GET {{base}}/api/tasks
+Accept: application/json
+
+###
+POST  {{base}}/api/tasks
+Content-Type: application/json
+
+{
+  "name": "New Task",
+  "isComplete": false
+}
+
+###
+
+Get  {{base}}/api/tasks/5
+Accept: application/json
+
+GET {{base}}/api/tasks/1
+
+###
+GET {{base}}/api/tasks/8
+
+###
+GET {{base}}/api/tasks/1
+
+###
+PUT {{base}}/api/tasks/1
+Content-Type: application/json
+
+{
+  "name": "Updated Task",
+  "isComplete": true
+}
+
+###
+DELETE {{base}}/api/tasks/8
+Content-Type: application/json
